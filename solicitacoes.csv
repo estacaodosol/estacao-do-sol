@@ -1,0 +1,25 @@
+data_hora,nome,servico,descricao,status
+20/10/2025 22:53:53,Cassio Campos dos Santos,Manutenção elétrica,troca de lampada no hall de entrada da torre,Não autorizado
+20/10/2025 23:11:28,José Francisco dos Santos,Segurança,"realizar ronda
+",Pendente
+21/10/2025 22:05:16,Junior,Jardinagem,poda das arvores do estacionamento,Concluído
+21/10/2025 22:09:37,Cassio Campos dos Santos,Manutenção elétrica,"Troca do sensor de presença torre 10 - 1º andar
+",Pendente
+21/10/2025 22:14:36,José Francisco dos Santos,Limpeza,"Limpeza da torre 5
+",Em andamento
+21/10/2025 23:10:06,Junior,Jardinagem,folhas no estacionamento,Não autorizado
+21/10/2025 23:44:19,Junior,Outros,outros,Concluído
+22/10/2025 19:41:20,teste,Limpeza,limpar,Pendente
+fulano@estacaodosol.com.br,22/10/2025 23:05,teste
+fulano@estacaodosol.com.br,22/10/2025 23:05,limpar
+fulano@estacaodosol.com.br,22/10/2025 23:19,xegurlajsl
+fulano@estacaodosol.com.br,22/10/2025 23:24,dfghjk
+fulano@estacaodosol.com.br,morador,Limpeza,sdfgh,22/10/2025 23:28
+fulano@estacaodosol.com.br,morador,Manutenção elétrica,sdfghj,22/10/2025 23:29
+fulano@estacaodosol.com.br,morador,Limpeza,asdf,22/10/2025 23:34
+fulano@estacaodosol.com.br,morador,Limpeza,jdfsljlskjd,22/10/2025 23:35
+fulano@estacaodosol.com.br,teste,Manutenção elétrica,teste,24/10/2025 13:29
+fulano@estacaodosol.com.br,Cassio Campos dos Santos,Manutenção elétrica,teste,24/10/2025 13:36
+fulano@estacaodosol.com.br,Junior,Segurança,segurança,24/10/2025 13:44
+fulano@estacaodosol.com.br,morador,Limpeza,asdfgfds,24/10/2025 13:54
+teste,servico,descricao,data

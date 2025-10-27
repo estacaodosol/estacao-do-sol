@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Solicitações Recebidas{% endblock %}
+
+{% block conteudo %}
+  <h2 class="mb-4">Solicitações Recebidas</h2>
+
+  {% if erro_data %}
+    <div class="alert alert-warning">{{ erro_data }}</div>
+  {% endif %}
+
+  {% if notificacao %}
+    <div class="alert alert-info">Nova solicitação recebida!</div>
+  {% endif %}
+
+<form method="get" action="/listar" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <input type="text" name="nome" class="form-control" placeholder="Buscar por nome" value="{{ request.args.get('nome', '') }}">
+  </div>
+  <div class="col-md-3">
+    <input type="text" name="servico" class="form-control" placeholder="Filtrar por serviço" value="{{ request.args.get('servico', '') }}">
+  </div>
+  <div class="col-md-2">
+    <select name="status" class="form-select">
+      <option value="">Todos os status</option>
+      <option value="Pendente" {% if request.args.get('status') == 'Pendente' %}selected{% endif %}>Pendente</option>
+      <option value="Concluído" {% if request.args.get('status') == 'Concluído' %}selected{% endif %}>Concluído</option>
+      <option value="Em andamento" {% if request.args.get('status') == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+      <option value="Cancelado" {% if request.args.get('status') == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+      <option value="Não autorizado" {% if request.args.get('status') == 'Não autorizado' %}selected{% endif %}>Não autorizado</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input type="date" name="data_inicial" class="form-control" value="{{ request.args.get('data_inicial', '') }}">
+  </div>
+  <div class="col-md-2">
+    <input type="date" name="data_final" class="form-control" value="{{ request.args.get('data_final', '') }}">
+  </div>
+
+  <div class="col-md-12 text-end">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{{ url_for('exportar', **request.args) }}" class="btn btn-outline-secondary">Exportar CSV</a>
+    <a href="{{ url_for('listar') }}" class="btn btn-outline-danger">Limpar filtros</a>
+  </div>
+</form>
+
+{% if solicitacoes %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead class="table-light">
+          <tr>
+            <th>Data/Hora</th>
+            <th>Nome</th>
+            <th>Serviço</th>
+            <th>Descrição</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in solicitacoes %}
+            <tr>
+              <td>{{ item[5] }}</td> <!-- data/hora -->
+              <td>{{ item[2] }}</td> <!-- nome -->
+              <td>{{ item[3] }}</td> <!-- serviço -->
+              <td>{{ item[4] }}</td> <!-- descrição -->
+              <td>
+                <div class="d-flex align-items-center">
+                  <span>{{ item[6] }}</span> <!-- status -->
+                  {% if session['tipo'] == 'sindico' %}
+                    <a href="{{ url_for('atualizar_status', id=item[0]) }}" class="btn btn-sm btn-warning ms-2">Alterar</a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-secondary">Nenhuma solicitação encontrada com os filtros aplicados.</div>
+  {% endif %}
+{% endblock %}

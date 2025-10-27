@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block titulo %}Estatísticas de Solicitações{% endblock %}
+{% block conteudo %}
+<h2 class="mb-4">Estatísticas de Solicitações</h2>
+
+<div class="row">
+  <div class="col-md-6">
+    <canvas id="graficoServicos"></canvas>
+  </div>
+  <div class="col-md-6">
+    <canvas id="graficoStatus"></canvas>
+  </div>
+  <div class="row mt-4">
+  <div class="col-md-12">
+    <canvas id="graficoPorData"></canvas>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const servicos = {{ servicos | tojson }};
+  const statusContagem = {{ status_contagem | tojson }};
+
+  const ctxServicos = document.getElementById('graficoServicos').getContext('2d');
+  new Chart(ctxServicos, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(servicos),
+      datasets: [{
+        label: 'Solicitações por Serviço',
+        data: Object.values(servicos),
+        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+      }]
+    }
+  });
+
+  const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
+  new Chart(ctxStatus, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(statusContagem),
+      datasets: [{
+        label: 'Distribuição de Status',
+        data: Object.values(statusContagem),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 159, 64, 0.6)'
+        ]
+      }]
+    }
+  });
+</script>
+<script>
+  const porData = {{ por_data | tojson }};
+
+  // Gráfico por Data
+  const ctxData = document.getElementById('graficoPorData').getContext('2d');
+  new Chart(ctxData, {
+    type: 'line',
+    data: {
+      labels: Object.keys(porData),
+      datasets: [{
+        label: 'Solicitações por Data',
+        data: Object.values(porData),
+        borderColor: 'rgba(255, 99, 132, 0.8)',
+        fill: false
+      }]
+    }
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block titulo %}Histórico de Solicitações{% endblock %}
+
+{% block conteudo %}
+<div class="container mt-4">
+  <h2 class="mb-4">Histórico de Solicitações</h2>
+
+  <form method="GET" class="row g-2 mb-4">
+    <div class="col-md-2">
+      <input type="text" name="nome" class="form-control" placeholder="Nome" value="{{ request.args.get('nome', '') }}">
+    </div>
+    <div class="col-md-2">
+      <select name="servico" class="form-select">
+        <option value="">Todos os serviços</option>
+        {% for s in servicos_disponiveis %}
+          <option value="{{ s }}" {% if request.args.get('servico') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="status" class="form-select">
+        <option value="">Todos os status</option>
+        <option value="Pendente" {% if request.args.get('status') == 'Pendente' %}selected{% endif %}>Pendente</option>
+        <option value="Em andamento" {% if request.args.get('status') == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+        <option value="Concluído" {% if request.args.get('status') == 'Concluído' %}selected{% endif %}>Concluído</option>
+        <option value="Cancelado" {% if request.args.get('status') == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+        <option value="Não autorizado" {% if request.args.get('status') == 'Não autorizado' %}selected{% endif %}>Não autorizado</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="data_inicial" class="form-control" value="{{ request.args.get('data_inicial', '') }}">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="data_final" class="form-control" value="{{ request.args.get('data_final', '') }}">
+    </div>
+    <div class="col-md-1">
+      <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+    </div>
+    <div class="col-md-1">
+      <a href="{{ url_for('historico') }}" class="btn btn-secondary w-100">Limpar</a>
+    </div>
+  </form>
+
+  {% if solicitacoes %}
+    <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Data</th>
+          <th>Usuário</th>
+          <th>Nome</th>
+          <th>Serviço</th>
+          <th>Descrição</th>
+          <th>Status</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in solicitacoes %}
+          <tr>
+            <td>{{ s['id'] }}</td>
+            <td>{{ s['data'] }}</td>
+            <td>{{ s['usuario'] }}</td>
+            <td>{{ s['nome'] }}</td>
+            <td>{{ s['servico'] }}</td>
+            <td>{{ s['descricao'] }}</td>
+            <td>
+              {% if tipo == 'sindico' %}
+                <form action="{{ url_for('alterar_status') }}" method="POST" class="d-flex">
+                  <input type="hidden" name="id" value="{{ s['id'] }}">
+                  <select name="status" class="form-select form-select-sm me-2">
+                    <option value="Pendente" {% if s['status'] == 'Pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="Em andamento" {% if s['status'] == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+                    <option value="Concluído" {% if s['status'] == 'Concluído' %}selected{% endif %}>Concluído</option>
+                    <option value="Cancelado" {% if s['status'] == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                    <option value="Não autorizado" {% if s['status'] == 'Não autorizado' %}selected{% endif %}>Não autorizado</option>
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-primary">Atualizar</button>
+                </form>
+              {% else %}
+                {{ s['status'] }}
+              {% endif %}
+            </td>
+            <td>{{ s['observacao'] or '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-warning">Nenhuma solicitação encontrada.</div>
+  {% endif %}
+</div>
+{% endblock %}

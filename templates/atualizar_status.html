@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block titulo %}Atualizar Status{% endblock %}
+{% block conteudo %}
+<h2>Atualizar Status da Solicitação</h2>
+<form method="post">
+    <p><strong>Serviço:</strong> {{ solicitacao[1] }}</p>
+    <p><strong>Descrição:</strong> {{ solicitacao[2] }}</p>
+
+    <div class="mb-3">
+        <label for="status">Novo Status:</label>
+        <select name="status" id="status" class="form-select">
+            <option value="pendente" {% if solicitacao[3] == 'pendente' %}selected{% endif %}>Pendente</option>
+            <option value="em andamento" {% if solicitacao[3] == 'em andamento' %}selected{% endif %}>Em andamento</option>
+            <option value="concluído" {% if solicitacao[3] == 'concluído' %}selected{% endif %}>Concluído</option>
+            <option value="cancelado" {% if solicitacao[3] == 'cancelado' %}selected{% endif %}>Cancelado</option>
+            <option value="não autorizado" {% if solicitacao[3] == 'não autorizado' %}selected{% endif %}>Não autorizado</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="observacao">Observação:</label>
+        <textarea name="observacao" id="observacao" class="form-control" rows="3">{{ solicitacao[6] or '' }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Atualizar</button>
+</form>
+{% endblock %}

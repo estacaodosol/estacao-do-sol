@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block titulo %}Página Inicial{% endblock %}
+{% block conteudo %}
+    <h2 class="mb-4">Bem-vindo ao Sistema do Condomínio</h2>
+
+    {% if session.usuario %}
+        <div class="list-group">
+            {% if session.tipo == 'morador' %}
+                <a href="/" class="list-group-item list-group-item-action">
+                    <i class="fa-solid fa-clipboard-list"></i> Solicitar Serviço
+                </a>
+            {% endif %}
+            {% if session.tipo == 'sindico' %}
+                <a href="/listar" class="list-group-item list-group-item-action">
+                    <i class="fa-solid fa-list-check"></i> Ver Solicitações
+                </a>
+            {% endif %}
+            <a href="/perfil" class="list-group-item list-group-item-action">
+                <i class="fa-solid fa-user"></i> Meu Perfil
+            </a>
+            <a href="/logout" class="list-group-item list-group-item-action text-danger">
+                <i class="fa-solid fa-right-from-bracket"></i> Sair
+            </a>
+        </div>
+    {% else %}
+        <p>Você não está logado.</p>
+        <a href="/login" class="btn btn-primary">
+            <i class="fa-solid fa-right-to-bracket"></i> Fazer login
+        </a>
+    {% endif %}
+{% endblock %}

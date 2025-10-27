@@ -1,0 +1,20 @@
+{
+  "name": "Estação do Sol",
+  "short_name": "Sol",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f57c00",
+  "icons": [
+    {
+      "src": "/static/icons/logo-condominio-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icons/logo-condominio-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

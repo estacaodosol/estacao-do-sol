@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block titulo %}Perfil do Usuário{% endblock %}
+{% block conteudo %}
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fa-solid fa-user"></i> Perfil do Usuário</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Nome:</strong> {{ session.nome }}</p>
+            <p><strong>Usuário:</strong> {{ session.usuario }}</p>
+            <p><strong>Tipo de acesso:</strong> {{ session.tipo|capitalize }}</p>
+            <p><strong>Login realizado em:</strong> {{ session.login_hora }}</p>
+
+            <a href="/alterar_senha" class="btn btn-outline-warning mt-3">
+                <i class="fa-solid fa-key"></i> Alterar senha
+            </a>
+            <a href="/inicio" class="btn btn-outline-primary mt-3 ms-2">
+                <i class="fa-solid fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

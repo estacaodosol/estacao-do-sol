@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block titulo %}Alterar Senha{% endblock %}
+{% block conteudo %}
+<h2 class="mb-4">Alterar Senha</h2>
+
+{% if erro %}
+<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i> {{ erro }}</div>
+{% endif %}
+{% if sucesso %}
+<div class="alert alert-success"><i class="fa-solid fa-check-circle"></i> {{ sucesso }}</div>
+{% endif %}
+
+<form method="post" class="card p-4 shadow-sm">
+    <div class="mb-3">
+        <label class="form-label">Senha atual:</label>
+        <input type="password" name="senha_atual" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Nova senha:</label>
+        <input type="password" name="nova_senha" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-key"></i> Alterar senha
+    </button>
+</form>
+{% endblock %}

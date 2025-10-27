@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: estacao-do-sol
+    env: python
+    buildCommand: ""
+    startCommand: "gunicorn app:app"
+

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block titulo %}Solicitar Serviço{% endblock %}
+{% block conteudo %}
+    <h2 class="mb-4">Solicitação de Serviço</h2>
+    <form method="post" action="{{ url_for('formulario') }}" class="card p-4 shadow-sm">
+        <div class="mb-3">
+            <label class="form-label">Nome:</label>
+            <input type="text" name="nome" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Serviço:</label>
+            <select name="servico" class="form-select" required>
+                <option value="">Selecione...</option>
+                <option value="Manutenção elétrica">Manutenção elétrica</option>
+                <option value="Limpeza">Limpeza</option>
+                <option value="Segurança">Segurança</option>
+                <option value="Jardinagem">Jardinagem</option>
+                <option value="Outros">Outros</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Descrição:</label>
+            <textarea name="descricao" rows="4" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitação</button>
+    </form>
+{% endblock %}

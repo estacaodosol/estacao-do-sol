@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Minhas Solicitações{% endblock %}
+
+{% block conteudo %}
+  <h2 class="mb-4">Minhas Solicitações</h2>
+
+  {% if pedidos %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead class="table-light">
+          <tr>
+            <th>Data/Hora</th>
+            <th>Serviço</th>
+            <th>Descrição</th>
+            <th>Status</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pedidos %}
+            <tr>
+              <td>{{ item['data'] }}</td>
+              <td>{{ item['servico'] }}</td>
+              <td>{{ item['descricao'] }}</td>
+              <td>{{ item['status'] }}</td>
+              <td>{{ item['observacao'] or '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-secondary">Você ainda não fez nenhuma solicitação.</div>
+  {% endif %}
+{% endblock %}
