@@ -3,5 +3,5 @@ services:
     name: estacao-do-sol
     env: python
     buildCommand: ""
-    startCommand: "gunicorn app:app"
-
+    startCommand: gunicorn app:app
+    autoDeploy: true
