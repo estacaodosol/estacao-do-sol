@@ -40,6 +40,9 @@
       <a href="{{ url_for('historico') }}" class="btn btn-secondary w-100">Limpar</a>
     </div>
   </form>
+{% if session.tipo == 'sindico' %}
+    <a href="{{ url_for('gerenciar_sindico') }}">Gerenciar Síndico</a>
+{% endif %}
 
   {% if solicitacoes %}
     <table class="table table-bordered table-striped">

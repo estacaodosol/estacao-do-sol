@@ -1,0 +1,11 @@
+<h2>Gerenciar Síndico</h2>
+
+<form method="POST">
+    <label>Escolher novo síndico:</label>
+    <select name="novo_sindico">
+        {% for usuario in usuarios %}
+            <option value="{{ usuario['email'] }}">{{ usuario['email'] }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Atualizar</button>
+</form>

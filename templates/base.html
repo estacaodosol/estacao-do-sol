@@ -36,6 +36,14 @@
       </li>
     {% endif %}
 
+    {% if session.aviso_sindico %}
+    <div style="background-color: #fffae6; padding: 10px; border: 1px solid #ffd700; margin-bottom: 15px;">
+        {{ session.aviso_sindico }}
+    </div>
+    {% set session.aviso_sindico = None %}
+{% endif %}
+
+
     <li class="nav-item">
       <a class="nav-link text-danger" href="{{ url_for('logout') }}">Sair</a>
     </li>
