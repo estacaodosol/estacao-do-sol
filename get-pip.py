@@ -27365,4 +27365,7 @@ TLFLiQkE^v8JO928D0~7!N00;of09jjB)K=BM2LJ#Y6#xJr00000000000001_fsL;j0B~t=FJE?LZe
 
 
 if __name__ == "__main__":
-    main()
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
