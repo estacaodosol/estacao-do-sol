@@ -49,9 +49,7 @@ def criar_sindico_inicial():
 # -------------------------------
 # Rotas
 # -------------------------------
-@app.route('/')
-def index():
-    return render_template('index.html')
+@app.route("/", endpoint="index")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
