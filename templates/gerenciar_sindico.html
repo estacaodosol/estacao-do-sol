@@ -1,11 +1,58 @@
-<h2>Gerenciar Síndico</h2>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciar Síndico</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <h2 class="mb-4 text-center">Gerenciar Síndico</h2>
 
-<form method="POST">
-    <label>Escolher novo síndico:</label>
-    <select name="novo_sindico">
-        {% for usuario in usuarios %}
-            <option value="{{ usuario['email'] }}">{{ usuario['email'] }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit">Atualizar</button>
-</form>
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Selecione o novo síndico</h5>
+            
+            {% if moradores %}
+            <form method="POST" action="/gerenciar_sindico">
+              <div class="mb-3">
+                <label for="email" class="form-label">Moradores cadastrados:</label>
+                <select class="form-select" id="email" name="email" required>
+                  {% for morador in moradores %}
+                    <option value="{{ morador.email }}">{{ morador.email }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Definir como Síndico</button>
+            </form>
+            {% else %}
+              <p class="text-muted mt-3">Nenhum morador cadastrado no momento.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4 text-center">
+          <a href="/" class="btn btn-secondary">Voltar para o Início</a>
+          <a href="/logout" class="btn btn-outline-danger ms-2">Sair</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
