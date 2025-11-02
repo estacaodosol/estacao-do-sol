@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block titulo %}Dashboard Síndico{% endblock %}
+
+{% block conteudo %}
+<div class="container mt-4">
+
+  <!-- Botões no topo -->
+  <div class="d-flex justify-content-between mb-4">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Voltar para o Início</a>
+    <a href="{{ url_for('logout') }}" class="btn btn-danger">Sair</a>
+  </div>
+
+  <h2>Dashboard de Estatísticas</h2>
+
+  <table class="table table-bordered table-striped mb-4">
+    <thead class="table-dark">
+      <tr>
+        <th>Serviço</th>
+        <th>Total de Solicitações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for servico, total in estatisticas.items() %}
+      <tr>
+        <td>{{ servico }}</td>
+        <td>{{ total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <canvas id="graficoDashboard" width="400" height="200"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('graficoDashboard').getContext('2d');
+    const graficoDashboard = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ estatisticas.keys()|list }},
+        datasets: [{
+          label: 'Total de solicitações',
+          data: {{ estatisticas.values()|list }},
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  </script>
+
+</div>
+{% endblock %}

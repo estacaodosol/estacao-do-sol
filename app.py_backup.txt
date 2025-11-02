@@ -142,32 +142,51 @@ def teste_salvar():
     
 
 @app.route('/historico')
+@login_requerido('sindico')
 def historico():
-    import sqlite3
+    conn = get_db_connection()
+    
+    # Obter filtros da URL
+    nome_filtro = request.args.get('nome', '')
+    servico_filtro = request.args.get('servico', '')
+    status_filtro = request.args.get('status', '')
+    data_inicial = request.args.get('data_inicial', '')
+    data_final = request.args.get('data_final', '')
 
-    # Verifica se o usuário está logado
-    if 'usuario' not in session or 'tipo' not in session:
-        return redirect(url_for('login'))
+    query = """
+        SELECT p.id, p.data, u.email as usuario, p.nome, p.servico, 
+               p.descricao, p.status, p.observacao
+        FROM pedidos p
+        JOIN usuarios u ON p.usuario_id = u.id
+        WHERE 1=1
+    """
+    params = []
 
-    usuario = session['usuario']
-    tipo = session['tipo']  # 'sindico' ou 'morador'
+    if nome_filtro:
+        query += " AND p.nome LIKE ?"
+        params.append(f"%{nome_filtro}%")
+    if servico_filtro:
+        query += " AND p.servico = ?"
+        params.append(servico_filtro)
+    if status_filtro:
+        query += " AND p.status = ?"
+        params.append(status_filtro)
+    if data_inicial:
+        query += " AND p.data >= ?"
+        params.append(data_inicial)
+    if data_final:
+        query += " AND p.data <= ?"
+        params.append(data_final)
 
-    conn = sqlite3.connect('solicitacoes.db')
-    conn.row_factory = sqlite3.Row
+    query += " ORDER BY p.data DESC"
 
-    cursor = conn.cursor()
-
-    if tipo == 'sindico':
-        # Síndico vê todas as solicitações
-        cursor.execute('SELECT * FROM solicitacoes ORDER BY data DESC')
-    else:
-        # Morador vê apenas as suas
-        cursor.execute('SELECT * FROM solicitacoes WHERE usuario = ? ORDER BY data DESC', (usuario,))
-
-    dados = cursor.fetchall()
+    solicitacoes = conn.execute(query, params).fetchall()
     conn.close()
 
-    return render_template('historico.html', solicitacoes=dados)
+    return render_template('historico.html', 
+                           solicitacoes=solicitacoes,
+                           servicos_disponiveis=SERVICOS_DISPONIVEIS,
+                           tipo=session['tipo'])
 
 @app.route('/listar')
 @login_requerido()

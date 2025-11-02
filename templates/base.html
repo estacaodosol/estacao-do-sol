@@ -3,61 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block titulo %}Condomínio App{% endblock %}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Tornar responsivo -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Ícones -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+  <!-- Manifesto (opcional para PWA) -->
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .navbar-brand {
+      font-weight: bold;
+    }
+
+    .nav-link {
+      font-size: 1rem;
+    }
+
+    @media (max-width: 576px) {
+      .navbar-brand {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- Navbar responsiva -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{{ url_for('index') }}">Condomínio App</a>
+      <a class="navbar-brand" href="{{ url_for('login') }}">
+        🏢 Condomínio App
+      </a>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <!-- Botão hamburguer no celular -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
         <span class="navbar-toggler-icon"></span>
       </button>
+
+      <!-- Itens da barra -->
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-  {% if session.get('usuario') %}
-    {% set tipo = session.get('tipo', '').strip().lower() %}
+          {% if session.get('usuario') %}
+            {% set tipo = session.get('tipo', '').strip().lower() %}
 
-    {% if tipo == 'morador' %}
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('formulario') }}">Nova Solicitação</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('meus_pedidos') }}">Minhas Solicitações</a>
-      </li>
-    {% elif tipo == 'sindico' %}
+            {% if tipo == 'morador' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('novo_pedido') }}">
+                  <i class="fas fa-plus-circle"></i> Nova Solicitação
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('meus_pedidos') }}">
+                  <i class="fas fa-list"></i> Minhas Solicitações
+                </a>
+              </li>
+
+            {% elif tipo == 'sindico' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('historico') }}">
+                  <i class="fas fa-history"></i> Histórico
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('gerenciar_sindico') }}">
+                  <i class="fas fa-users-cog"></i> Gerenciar
+                </a>
+              </li>
+            {% endif %}
+
             <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('estatisticas') }}">Estatísticas</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('historico') }}">Histórico</a>
-      </li>
-    {% endif %}
+              <a class="nav-link text-warning" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Sair
+              </a>
+            </li>
 
-    {% if session.aviso_sindico %}
-    <div style="background-color: #fffae6; padding: 10px; border: 1px solid #ffd700; margin-bottom: 15px;">
-        {{ session.aviso_sindico }}
-    </div>
-    {% set session.aviso_sindico = None %}
-{% endif %}
-
-
-    <li class="nav-item">
-      <a class="nav-link text-danger" href="{{ url_for('logout') }}">Sair</a>
-    </li>
-  {% else %}
-    <li class="nav-item">
-      <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="{{ url_for('cadastro') }}">Cadastro</a>
-    </li>
-  {% endif %}
-</ul>
-
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('login') }}">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('cadastro') }}">
+                <i class="fas fa-user-plus"></i> Cadastro
+              </a>
+            </li>
+          {% endif %}
+        </ul>
       </div>
     </div>
   </nav>
@@ -66,6 +108,7 @@
     {% block conteudo %}{% endblock %}
   </div>
 
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
