@@ -1,103 +1,84 @@
 {% extends 'base.html' %}
 
+{% block titulo %}Dashboard do Síndico{% endblock %}
+
 {% block conteudo %}
-<h1>Dashboard do Síndico</h1>
+<div class="container py-4">
 
-<div class="row">
-    <div class="col-md-6">
-        <h3>Pedidos por Serviço</h3>
-        <canvas id="graficoServicos"></canvas>
+    <h2 class="mb-4">Dashboard do Síndico</h2>
+
+    <!-- Botão Voltar -->
+    <a href="{{ url_for('historico') }}" class="btn btn-secondary mb-4">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+
+    <div class="row g-4">
+        <!-- Gráfico de Barras -->
+        <div class="col-12 col-md-6">
+            <h5 class="text-center">Pedidos por Serviço (Quantidade)</h5>
+            <div class="grafico-wrapper">
+                <canvas id="graficoServicos"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de Pizza -->
+        <div class="col-12 col-md-6">
+            <h5 class="text-center">Distribuição de Pedidos por Serviço (Percentual)</h5>
+            <div class="grafico-wrapper">
+                <canvas id="graficoPizza"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="col-md-6">
-        <h3>Pedidos por Status</h3>
-        <canvas id="graficoStatus"></canvas>
-    </div>
+
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <h3>Pedidos por Data</h3>
-        <canvas id="graficoDatas"></canvas>
-    </div>
-</div>
-
-<a href="{{ url_for('historico') }}" class="btn btn-primary mt-3">Voltar para Histórico</a>
+<style>
+.grafico-wrapper {
+    width: 100%;
+    height: 250px; /* altura menor e mais agradável */
+}
+@media (min-width: 768px) { .grafico-wrapper { height: 300px; } }
+@media (min-width: 1200px) { .grafico-wrapper { height: 350px; } }
+</style>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- Plugin para mostrar os percentuais -->
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
 <script>
-    // Pedidos por Serviço
-    const ctxServicos = document.getElementById('graficoServicos').getContext('2d');
-    new Chart(ctxServicos, {
-        type: 'bar',
-        data: {
-            labels: {{ servicos_count.keys() | list | safe }},
-            datasets: [{
-                label: 'Total de Pedidos',
-                data: {{ servicos_count.values() | list | safe }},
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        }
-    });
+const labels = {{ servicos_count.keys()|list|tojson | default('[]') }};
+const dataValores = {{ servicos_count.values()|list|tojson | default('[]') }};
+const total = dataValores.reduce((a,b) => a + b, 0);
 
-    // Pedidos por Status com percentual
-    const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
-    new Chart(ctxStatus, {
-        type: 'pie',
-        data: {
-            labels: {{ status_count.keys() | list | safe }},
-            datasets: [{
-                data: {{ status_count.values() | list | safe }},
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(153, 102, 255, 0.5)'
-                ],
-                borderColor: 'rgba(255, 255, 255, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            plugins: {
-                datalabels: {
-                    formatter: (value, ctx) => {
-                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        let percentage = (value * 100 / sum).toFixed(1) + "%";
-                        return percentage;
-                    },
-                    color: '#fff',
-                    font: {
-                        weight: 'bold',
-                        size: 14
-                    }
-                }
+// Gráfico de Barras
+const ctxBar = document.getElementById('graficoServicos').getContext('2d');
+new Chart(ctxBar, {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Pedidos por Serviço', data: dataValores, backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'] }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+});
+
+// Gráfico de Pizza com percentuais dentro das fatias
+const ctxPizza = document.getElementById('graficoPizza').getContext('2d');
+new Chart(ctxPizza, {
+    type: 'pie',
+    data: { labels: labels, datasets: [{ label: 'Percentual de Pedidos', data: dataValores, backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'] }] },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom' },
+            datalabels: {
+                color: '#fff',
+                formatter: (value, ctx) => {
+                    let percentage = ((value / total) * 100).toFixed(1);
+                    return `${percentage}%`;
+                },
+                font: { weight: 'bold', size: 14 }
             }
-        },
-        plugins: [ChartDataLabels]
-    });
-
-    // Pedidos por Data
-    const ctxDatas = document.getElementById('graficoDatas').getContext('2d');
-    new Chart(ctxDatas, {
-        type: 'line',
-        data: {
-            labels: {{ datas_count.keys() | list | safe }},
-            datasets: [{
-                label: 'Pedidos por Dia',
-                data: {{ datas_count.values() | list | safe }},
-                backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                borderColor: 'rgba(255, 159, 64, 1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3
-            }]
         }
-    });
+    },
+    plugins: [ChartDataLabels]
+});
 </script>
 {% endblock %}

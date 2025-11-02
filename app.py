@@ -134,31 +134,25 @@ from flask import render_template
 from collections import Counter
 #import datetime
 
+SERVICOS_DISPONIVEIS = ['Elétrica', 'Hidráulica', 'Jardinagem', 'Segurança']
+
 @app.route('/dashboard_sindico')
+@login_requerido('sindico')
 def dashboard_sindico():
-    # Exemplo: vamos pegar todos os pedidos (substitua pelo seu banco)
-    # pedidos = carregar_do_banco()  # Sua função para carregar pedidos
+    conn = get_db_connection()
+    pedidos = [dict(p) for p in conn.execute('SELECT servico, status, data FROM pedidos').fetchall()]
+    conn.close()
 
-    # Para exemplo, vou usar uma lista fake:
-    pedidos = [
-        {'servico': 'Limpeza', 'status': 'Pendente', 'data': '2025-11-01'},
-        {'servico': 'Manutenção', 'status': 'Concluído', 'data': '2025-11-01'},
-        {'servico': 'Limpeza', 'status': 'Em andamento', 'data': '2025-11-02'},
-        {'servico': 'Segurança', 'status': 'Pendente', 'data': '2025-11-03'},
-    ]
+    # Padronizar os nomes e contar
+    servicos_count = Counter(p['servico'].strip().capitalize() for p in pedidos)
+    servicos_count_completo = {s: servicos_count.get(s, 0) for s in SERVICOS_DISPONIVEIS}
 
-    # Contar quantidade de pedidos por serviço
-    servicos_count = Counter(p['servico'] for p in pedidos)
-
-    # Contar quantidade de pedidos por status
     status_count = Counter(p['status'] for p in pedidos)
-
-    # Contar pedidos por dia (exemplo)
     datas_count = Counter(p['data'] for p in pedidos)
 
     return render_template(
         'dashboard_sindico.html',
-        servicos_count=servicos_count,
+        servicos_count=servicos_count_completo,
         status_count=status_count,
         datas_count=datas_count
     )
