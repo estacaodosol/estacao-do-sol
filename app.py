@@ -132,7 +132,7 @@ def meus_pedidos():
 
 from flask import render_template
 from collections import Counter
-import datetime
+#import datetime
 
 @app.route('/dashboard_sindico')
 def dashboard_sindico():
@@ -263,13 +263,92 @@ def alterar_status():
     flash('Status atualizado com sucesso!', 'success')
     return redirect(url_for('historico'))
 
+from flask import flash, redirect, url_for
+
 # -------------------------------
-# ROTA GERENCIAR SÍNDICO (EXEMPLO)
+# PROMOVER SÍNDICO
+# -------------------------------
+@app.route('/promover_sindico/<int:morador_id>', methods=['POST'])
+@login_requerido('sindico')
+def promover_sindico(morador_id):
+    conn = get_db_connection()
+
+    # Buscar síndico atual
+    sindico_atual = conn.execute(
+        "SELECT * FROM usuarios WHERE tipo = 'sindico'"
+    ).fetchone()
+
+    # Rebaixar síndico atual (se existir e for diferente do novo)
+    if sindico_atual and sindico_atual['id'] != morador_id:
+        conn.execute(
+            "UPDATE usuarios SET tipo = 'morador' WHERE id = ?",
+            (sindico_atual['id'],)
+        )
+        flash(f"O síndico {sindico_atual['email']} foi rebaixado a morador comum.", "info")
+
+    # Promover o novo síndico
+    conn.execute(
+        "UPDATE usuarios SET tipo = 'sindico' WHERE id = ?",
+        (morador_id,)
+    )
+    conn.commit()
+    conn.close()
+
+    flash("Novo síndico promovido com sucesso!", "success")
+    return redirect(url_for('gerenciar_sindico'))
+
+
+# -------------------------------
+# DISPROMOVER SÍNDICO (REBAIXAR)
+# -------------------------------
+@app.route('/dispromover_sindico/<int:morador_id>', methods=['POST'])
+@login_requerido('sindico')
+def dispromover_sindico(morador_id):
+    conn = get_db_connection()
+
+    usuario = conn.execute(
+        "SELECT * FROM usuarios WHERE id = ?", (morador_id,)
+    ).fetchone()
+
+    if usuario and usuario['tipo'] == 'sindico':
+        conn.execute(
+            "UPDATE usuarios SET tipo = 'morador' WHERE id = ?",
+            (morador_id,)
+        )
+        conn.commit()
+        flash(f"O síndico {usuario['email']} foi rebaixado a morador comum.", "info")
+    else:
+        flash("Usuário não encontrado ou já é morador.", "warning")
+
+    conn.close()
+    return redirect(url_for('gerenciar_sindico'))
+
+
+# -------------------------------
+# ROTA GERENCIAR SÍNDICO
 # -------------------------------
 @app.route('/gerenciar_sindico')
 @login_requerido('sindico')
 def gerenciar_sindico():
-    return render_template('gerenciar_sindico.html')
+    conn = get_db_connection()
+
+    # Buscar todos os usuários
+    usuarios = conn.execute('SELECT id, email, tipo FROM usuarios').fetchall()
+
+    # Estatísticas simples dos pedidos
+    estatisticas = conn.execute(
+        'SELECT servico, COUNT(*) as total FROM pedidos GROUP BY servico'
+    ).fetchall()
+    estatisticas_dict = {row['servico']: row['total'] for row in estatisticas}
+
+    conn.close()
+
+    return render_template(
+        'gerenciar_sindico.html',
+        usuarios=usuarios,
+        estatisticas=estatisticas_dict
+    )
+
 
 # -------------------------------
 # EXECUTAR APP

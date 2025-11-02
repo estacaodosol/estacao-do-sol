@@ -6,61 +6,55 @@
 
   <!-- Cabeçalho com botões -->
   <div class="d-flex justify-content-between mb-4">
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Voltar para o Início</a>
-    <a href="{{ url_for('logout') }}" class="btn btn-danger">Sair</a>
+      <a href="{{ url_for('historico') }}" class="btn btn-secondary">Voltar para o Início</a>
+      <div>
+          <a href="{{ url_for('gerenciar_sindico') }}" class="btn btn-primary me-2">Gerenciar Síndico</a>
+          <a href="{{ url_for('dashboard_sindico') }}" class="btn btn-success">Estatísticas</a>
+          <a href="{{ url_for('logout') }}" class="btn btn-danger ms-2">Sair</a>
+      </div>
   </div>
 
-  {% if not moradores %}
-    <div class="alert alert-warning">
-      Nenhum morador cadastrado no momento.
-    </div>
-  {% else %}
-    <h2>Estatísticas dos Serviços</h2>
-    
-    <!-- Exemplo de estatística em tabela -->
-    <table class="table table-bordered table-striped mb-4">
+  <!-- Aviso importante -->
+  <div class="alert alert-info">
+      <strong>Atenção:</strong> ao promover um novo síndico, o síndico atual será automaticamente rebaixado para morador comum.
+  </div>
+
+  <!-- Lista de Usuários -->
+  <h2>Usuários do Sistema</h2>
+
+  {% if usuarios %}
+  <table class="table table-bordered table-striped">
       <thead class="table-dark">
-        <tr>
-          <th>Serviço</th>
-          <th>Total de Solicitações</th>
-        </tr>
+          <tr>
+              <th>Email</th>
+              <th>Tipo</th>
+              <th>Ação</th>
+          </tr>
       </thead>
       <tbody>
-        {% for servico, total in estatisticas.items() %}
-        <tr>
-          <td>{{ servico }}</td>
-          <td>{{ total }}</td>
-        </tr>
-        {% endfor %}
+          {% for u in usuarios %}
+          <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.tipo | capitalize }}</td>
+              <td>
+                  {% if u.tipo == 'morador' %}
+                      <form action="{{ url_for('promover_sindico', morador_id=u.id) }}" method="POST" style="display:inline;">
+                          <button type="submit" class="btn btn-sm btn-success">Promover a Síndico</button>
+                      </form>
+                  {% elif u.tipo == 'sindico' %}
+                      <form action="{{ url_for('dispromover_sindico', morador_id=u.id) }}" method="POST" style="display:inline;">
+                          <button type="submit" class="btn btn-sm btn-danger">Rebaixar para Morador</button>
+                      </form>
+                  {% endif %}
+              </td>
+          </tr>
+          {% endfor %}
       </tbody>
-    </table>
-
-    <!-- Gráfico de barras usando Chart.js -->
-    <canvas id="graficoServicos" width="400" height="200"></canvas>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      const ctx = document.getElementById('graficoServicos').getContext('2d');
-      const graficoServicos = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: {{ estatisticas.keys()|list }},
-          datasets: [{
-            label: 'Total de solicitações',
-            data: {{ estatisticas.values()|list }},
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-    </script>
+  </table>
+  {% else %}
+  <div class="alert alert-warning">
+      Nenhum usuário cadastrado no momento.
+  </div>
   {% endif %}
 </div>
 {% endblock %}

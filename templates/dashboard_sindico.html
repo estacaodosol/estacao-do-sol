@@ -1,59 +1,103 @@
 {% extends 'base.html' %}
-{% block titulo %}Dashboard Síndico{% endblock %}
 
 {% block conteudo %}
-<div class="container mt-4">
+<h1>Dashboard do Síndico</h1>
 
-  <!-- Botões no topo -->
-  <div class="d-flex justify-content-between mb-4">
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">Voltar para o Início</a>
-    <a href="{{ url_for('logout') }}" class="btn btn-danger">Sair</a>
-  </div>
-
-  <h2>Dashboard de Estatísticas</h2>
-
-  <table class="table table-bordered table-striped mb-4">
-    <thead class="table-dark">
-      <tr>
-        <th>Serviço</th>
-        <th>Total de Solicitações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for servico, total in estatisticas.items() %}
-      <tr>
-        <td>{{ servico }}</td>
-        <td>{{ total }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <canvas id="graficoDashboard" width="400" height="200"></canvas>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const ctx = document.getElementById('graficoDashboard').getContext('2d');
-    const graficoDashboard = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: {{ estatisticas.keys()|list }},
-        datasets: [{
-          label: 'Total de solicitações',
-          data: {{ estatisticas.values()|list }},
-          backgroundColor: 'rgba(255, 99, 132, 0.6)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
-    });
-  </script>
-
+<div class="row">
+    <div class="col-md-6">
+        <h3>Pedidos por Serviço</h3>
+        <canvas id="graficoServicos"></canvas>
+    </div>
+    <div class="col-md-6">
+        <h3>Pedidos por Status</h3>
+        <canvas id="graficoStatus"></canvas>
+    </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h3>Pedidos por Data</h3>
+        <canvas id="graficoDatas"></canvas>
+    </div>
+</div>
+
+<a href="{{ url_for('historico') }}" class="btn btn-primary mt-3">Voltar para Histórico</a>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Plugin para mostrar os percentuais -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+    // Pedidos por Serviço
+    const ctxServicos = document.getElementById('graficoServicos').getContext('2d');
+    new Chart(ctxServicos, {
+        type: 'bar',
+        data: {
+            labels: {{ servicos_count.keys() | list | safe }},
+            datasets: [{
+                label: 'Total de Pedidos',
+                data: {{ servicos_count.values() | list | safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Pedidos por Status com percentual
+    const ctxStatus = document.getElementById('graficoStatus').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'pie',
+        data: {
+            labels: {{ status_count.keys() | list | safe }},
+            datasets: [{
+                data: {{ status_count.values() | list | safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(153, 102, 255, 0.5)'
+                ],
+                borderColor: 'rgba(255, 255, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    formatter: (value, ctx) => {
+                        let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return percentage;
+                    },
+                    color: '#fff',
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // Pedidos por Data
+    const ctxDatas = document.getElementById('graficoDatas').getContext('2d');
+    new Chart(ctxDatas, {
+        type: 'line',
+        data: {
+            labels: {{ datas_count.keys() | list | safe }},
+            datasets: [{
+                label: 'Pedidos por Dia',
+                data: {{ datas_count.values() | list | safe }},
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        }
+    });
+</script>
 {% endblock %}

@@ -44,8 +44,12 @@
   </form>
 
   {% if session.tipo == 'sindico' %}
-    <a href="{{ url_for('gerenciar_sindico') }}" class="btn btn-outline-primary mb-3">Gerenciar Síndico</a>
-  {% endif %}
+  <div class="d-flex gap-2 mb-3">
+    <a href="{{ url_for('gerenciar_sindico') }}" class="btn btn-outline-primary">Gerenciar Síndico</a>
+    <a href="{{ url_for('dashboard_sindico') }}" class="btn btn-success">Estatísticas</a>
+  </div>
+{% endif %}
+
 
   {% if solicitacoes %}
     <div class="table-responsive">
