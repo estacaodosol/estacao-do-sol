@@ -1,23 +1,77 @@
+# app.py
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 from functools import wraps
+from werkzeug.utils import secure_filename
+import pytz
 from datetime import datetime
-from flask_bcrypt import Bcrypt  # Para criptografia de senha
 
+# -------------------------------
+# Configuração do app
+# -------------------------------
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///condominio.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.environ.get('SECRET_KEY', 'uma_chave_temporaria')
+
+# Configuração de upload de arquivos
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Extensões
+db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
-# Lista de serviços disponíveis
-SERVICOS_DISPONIVEIS = ['Elétrica', 'Hidráulica', 'Jardinagem', 'Elevador']
+# Fusos horários
+utc = pytz.utc
+brasil = pytz.timezone('America/Sao_Paulo')
 
 # -------------------------------
-# FUNÇÃO DE CONEXÃO COM BANCO
+# MODELOS
 # -------------------------------
-def get_db_connection():
-    conn = sqlite3.connect('solicitacoes.db')  # banco correto
-    conn.row_factory = sqlite3.Row
-    return conn
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    senha = db.Column(db.String(128), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    pedidos = db.relationship('Pedido', backref='usuario', lazy=True)
+
+class Morador(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    apartamento = db.Column(db.String(10), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+
+class Servico(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), unique=True, nullable=False)
+    pedidos = db.relationship('Pedido', backref='servico', lazy=True)
+
+    def __repr__(self):
+        return f"{self.nome}"
+
+class Pedido(db.Model):
+    __tablename__ = 'pedido'
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    servico_id = db.Column(db.Integer, db.ForeignKey('servico.id'), nullable=False)
+    nome = db.Column(db.String(100), nullable=False)
+    descricao = db.Column(db.Text)
+    foto = db.Column(db.String(200))  # caminho da imagem opcional
+    status = db.Column(db.String(20), default='Pendente')
+    observacao = db.Column(db.Text)
+    data = db.Column(db.DateTime, default=datetime.utcnow)  # horário do pedido
+
+    def __repr__(self):
+        return f'<Pedido {self.id} - {self.nome}>'
+
+# Cria as tabelas
+with app.app_context():
+    db.create_all()
 
 # -------------------------------
 # DECORADOR DE LOGIN
@@ -36,66 +90,53 @@ def login_requerido(tipo=None):
         return decorated_function
     return decorator
 
+# -------------------------------
+# ROTAS DE AUTENTICAÇÃO
+# -------------------------------
 @app.route('/')
 def index():
     return redirect(url_for('login'))
 
-# -------------------------------
-# LOGIN
-# -------------------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         senha = request.form['senha']
 
-        conn = get_db_connection()
-        usuario = conn.execute('SELECT * FROM usuarios WHERE email = ?', (email,)).fetchone()
-        conn.close()
-
-        if usuario and bcrypt.check_password_hash(usuario['senha'], senha):
-            session['usuario_id'] = usuario['id']
-            session['tipo'] = usuario['tipo']
-
-            if usuario['tipo'] == 'morador':
+        usuario = Usuario.query.filter_by(email=email).first()
+        if usuario and bcrypt.check_password_hash(usuario.senha, senha):
+            session['usuario_id'] = usuario.id
+            session['tipo'] = usuario.tipo
+            if usuario.tipo == 'morador':
                 return redirect(url_for('meus_pedidos'))
-            elif usuario['tipo'] == 'sindico':
+            else:
                 return redirect(url_for('historico'))
         else:
             flash('Email ou senha incorretos.', 'danger')
             return redirect(url_for('login'))
-
     return render_template('login.html')
 
-# -------------------------------
-# LOGOUT
-# -------------------------------
 @app.route('/logout')
 def logout():
     session.clear()
     flash('Você saiu com sucesso.', 'success')
     return redirect(url_for('login'))
 
-# -------------------------------
-# CADASTRO
-# -------------------------------
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
         email = request.form['email']
         senha = request.form['senha']
-        tipo = 'morador'  # sempre cadastra como morador
+        tipo = 'morador'
 
-        # Criptografar senha
+        if Usuario.query.filter_by(email=email).first():
+            flash('Email já cadastrado.', 'warning')
+            return redirect(url_for('cadastro'))
+
         hashed_senha = bcrypt.generate_password_hash(senha).decode('utf-8')
-
-        conn = get_db_connection()
-        conn.execute(
-            'INSERT INTO usuarios (email, senha, tipo) VALUES (?, ?, ?)',
-            (email, hashed_senha, tipo)
-        )
-        conn.commit()
-        conn.close()
+        novo_usuario = Usuario(email=email, senha=hashed_senha, tipo=tipo)
+        db.session.add(novo_usuario)
+        db.session.commit()
 
         flash('Cadastro realizado com sucesso! Faça login.', 'success')
         return redirect(url_for('login'))
@@ -103,249 +144,222 @@ def cadastro():
     return render_template('cadastro.html')
 
 # -------------------------------
-# ROTA DO MORADOR - MEUS PEDIDOS
+# ROTAS DE SERVIÇOS
 # -------------------------------
+@app.route('/cadastrar_servico', methods=['POST'])
+@login_requerido('sindico')
+def cadastrar_servico():
+    nome = request.form.get('nome_servico', '').strip().capitalize()
+    if not nome:
+        flash('O nome do serviço não pode ser vazio.', 'danger')
+        return redirect(url_for('gerenciar_sindico'))
+
+    if Servico.query.filter_by(nome=nome).first():
+        flash('Este serviço já está cadastrado.', 'warning')
+    else:
+        db.session.add(Servico(nome=nome))
+        db.session.commit()
+        flash(f'Serviço "{nome}" cadastrado com sucesso!', 'success')
+    return redirect(url_for('gerenciar_sindico'))
+
+# -------------------------------
+# ROTAS DE PEDIDOS
+# -------------------------------
+@app.route('/novo_pedido', methods=['GET', 'POST'])
+@login_requerido('morador')
+def novo_pedido():
+    servicos_disponiveis = Servico.query.order_by(Servico.nome).all()
+    if not servicos_disponiveis:
+        flash('Nenhum serviço disponível. Contate o síndico para cadastrar serviços.', 'warning')
+        return redirect(url_for('meus_pedidos'))
+
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        servico_id = request.form.get('servico')
+        usuario_id = session['usuario_id']
+
+        if not nome or not servico_id:
+            flash('Preencha todos os campos obrigatórios.', 'danger')
+            return redirect(url_for('novo_pedido'))
+
+        servico = Servico.query.get(int(servico_id))
+        if not servico:
+            flash('Serviço inválido.', 'danger')
+            return redirect(url_for('novo_pedido'))
+
+        # ----- Upload de foto -----
+        foto_arquivo = request.files.get('foto')
+        caminho_foto = None
+        if foto_arquivo and foto_arquivo.filename != '':
+            import uuid
+            ext = os.path.splitext(foto_arquivo.filename)[1].lower()
+            if ext not in ['.jpg', '.jpeg', '.png', '.gif']:
+                flash('Formato de imagem não permitido. Use jpg, jpeg, png ou gif.', 'danger')
+                return redirect(url_for('novo_pedido'))
+            nome_arquivo = f"{uuid.uuid4().hex}{ext}"
+            caminho_foto = os.path.join(app.config['UPLOAD_FOLDER'], nome_arquivo)
+            foto_arquivo.save(caminho_foto)
+            caminho_foto = f"/{caminho_foto.replace(os.sep, '/')}"
+
+        novo_pedido = Pedido(
+            usuario_id=usuario_id,
+            servico_id=servico.id,
+            nome=nome,
+            descricao=descricao,
+            foto=caminho_foto
+        )
+        db.session.add(novo_pedido)
+        db.session.commit()
+        flash('Pedido cadastrado com sucesso!', 'success')
+        return redirect(url_for('meus_pedidos'))
+
+    return render_template('novo_pedido.html', servicos_disponiveis=servicos_disponiveis)
+
 @app.route('/meus_pedidos')
 @login_requerido('morador')
 def meus_pedidos():
     usuario_id = session['usuario_id']
     servico_filtro = request.args.get('servico')
 
-    conn = get_db_connection()
-    query = """
-        SELECT p.id, p.data, u.email as usuario, p.nome, p.servico, p.descricao, p.status, p.observacao
-        FROM pedidos p
-        JOIN usuarios u ON p.usuario_id = u.id
-        WHERE p.usuario_id = ?
-    """
-    params = [usuario_id]
-
+    query = Pedido.query.filter_by(usuario_id=usuario_id)
     if servico_filtro:
-        query += " AND p.servico = ?"
-        params.append(servico_filtro)
+        try:
+            servico_id = int(servico_filtro)
+            query = query.filter_by(servico_id=servico_id)
+        except ValueError:
+            flash('Serviço inválido.', 'warning')
 
-    query += " ORDER BY p.data DESC"
-    pedidos = conn.execute(query, params).fetchall()
-    conn.close()
+    pedidos = query.order_by(Pedido.data.desc()).all()
+    servicos_disponiveis = Servico.query.order_by(Servico.nome).all()
 
-    return render_template('meus_pedidos.html', pedidos=pedidos, servicos_disponiveis=SERVICOS_DISPONIVEIS)
-
-from flask import render_template
-from collections import Counter
-#import datetime
-
-SERVICOS_DISPONIVEIS = ['Elétrica', 'Hidráulica', 'Jardinagem', 'Segurança']
-
-@app.route('/dashboard_sindico')
-@login_requerido('sindico')
-def dashboard_sindico():
-    conn = get_db_connection()
-    pedidos = [dict(p) for p in conn.execute('SELECT servico, status, data FROM pedidos').fetchall()]
-    conn.close()
-
-    # Padronizar os nomes e contar
-    servicos_count = Counter(p['servico'].strip().capitalize() for p in pedidos)
-    servicos_count_completo = {s: servicos_count.get(s, 0) for s in SERVICOS_DISPONIVEIS}
-
-    status_count = Counter(p['status'] for p in pedidos)
-    datas_count = Counter(p['data'] for p in pedidos)
+    # Determinar dashboard correto
+    if session.get('perfil') == 'sindico':
+        voltar_endpoint = 'dashboard_sindico'
+    else:
+        voltar_endpoint = 'meus_pedidos'  # ou outra rota de morador que exista
 
     return render_template(
-        'dashboard_sindico.html',
-        servicos_count=servicos_count_completo,
-        status_count=status_count,
-        datas_count=datas_count
+        'meus_pedidos.html',
+        pedidos=pedidos,
+        servicos_disponiveis=servicos_disponiveis,
+        brasil=brasil,
+        voltar_endpoint=voltar_endpoint
     )
 
 
 # -------------------------------
-# NOVO PEDIDO
-# -------------------------------
-@app.route('/novo_pedido', methods=['GET', 'POST'])
-@login_requerido('morador')
-def novo_pedido():
-    if request.method == 'POST':
-        nome = request.form['nome']
-        servico = request.form['servico']
-        descricao = request.form['descricao']
-        usuario_id = session['usuario_id']
-        data = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        status = 'Pendente'
-
-        # Validação do serviço
-        if servico not in SERVICOS_DISPONIVEIS:
-            flash('Serviço inválido.', 'danger')
-            return redirect(url_for('novo_pedido'))
-
-        conn = get_db_connection()
-        conn.execute(
-            'INSERT INTO pedidos (usuario_id, nome, servico, descricao, status, data) VALUES (?, ?, ?, ?, ?, ?)',
-            (usuario_id, nome, servico, descricao, status, data)
-        )
-        conn.commit()
-        conn.close()
-
-        flash('Pedido cadastrado com sucesso!', 'success')
-        return redirect(url_for('meus_pedidos'))
-
-    return render_template('novo_pedido.html', servicos_disponiveis=SERVICOS_DISPONIVEIS)
-
-# -------------------------------
-# ROTA DO SÍNDICO - HISTÓRICO
+# DASHBOARD SÍNDICO
 # -------------------------------
 @app.route('/historico')
 @login_requerido('sindico')
 def historico():
-    conn = get_db_connection()
+    pedidos_raw = db.session.query(
+        Pedido.id,
+        Pedido.data.label('data_solicitacao'),
+        Pedido.status,
+        Pedido.observacao,
+        Servico.nome.label('servico_nome'),
+        Usuario.email.label('usuario_email')  # usando email em vez de nome
+    ).join(Servico, Pedido.servico_id == Servico.id
+    ).join(Usuario, Pedido.usuario_id == Usuario.id
+    ).order_by(Pedido.data.desc()).all()
 
-    # Filtros
-    nome_filtro = request.args.get('nome', '')
-    servico_filtro = request.args.get('servico', '')
-    status_filtro = request.args.get('status', '')
-    data_inicial = request.args.get('data_inicial', '')
-    data_final = request.args.get('data_final', '')
+    # Ajustando os dados antes de enviar para o template
+    pedidos = []
+    for p in pedidos_raw:
+        pedidos.append({
+            "id": p.id,
+            "data_solicitacao": p.data_solicitacao.strftime('%d/%m/%Y %H:%M') if p.data_solicitacao else "Não informada",
+            "status": p.status or "",
+            "observacao": p.observacao or "",
+            "servico_nome": p.servico_nome or "",
+            "usuario_email": p.usuario_email or ""
+        })
 
-    query = """
-        SELECT p.id, p.data, u.email as usuario, p.nome, p.servico, 
-               p.descricao, p.status, p.observacao
-        FROM pedidos p
-        JOIN usuarios u ON p.usuario_id = u.id
-        WHERE 1=1
-    """
-    params = []
+    return render_template('historico.html', pedidos=pedidos)
 
-    if nome_filtro:
-        query += " AND p.nome LIKE ?"
-        params.append(f"%{nome_filtro}%")
-    if servico_filtro:
-        query += " AND p.servico = ?"
-        params.append(servico_filtro)
-    if status_filtro:
-        query += " AND p.status = ?"
-        params.append(status_filtro)
-    if data_inicial:
-        query += " AND p.data >= ?"
-        params.append(data_inicial)
-    if data_final:
-        query += " AND p.data <= ?"
-        params.append(data_final)
 
-    query += " ORDER BY p.data DESC"
 
-    solicitacoes = conn.execute(query, params).fetchall()
-    conn.close()
 
-    return render_template('historico.html',
-                           solicitacoes=solicitacoes,
-                           servicos_disponiveis=SERVICOS_DISPONIVEIS,
-                           tipo=session['tipo'])
-
-# -------------------------------
-# ALTERAR STATUS (SÓ SÍNDICO)
-# -------------------------------
-@app.route('/alterar_status', methods=['POST'])
+@app.route('/dashboard_sindico')
 @login_requerido('sindico')
-def alterar_status():
-    pedido_id = request.form['id']
-    novo_status = request.form['status']
+def dashboard_sindico():
+    # Consulta os serviços e a quantidade de pedidos por serviço
+    query_result = db.session.query(
+        Servico.nome, db.func.count(Pedido.id)
+    ).join(Pedido, isouter=True).group_by(Servico.id).all()
 
-    conn = get_db_connection()
-    conn.execute('UPDATE pedidos SET status = ? WHERE id = ?', (novo_status, pedido_id))
-    conn.commit()
-    conn.close()
+    # Transformar em lista de dicionários
+    servicos_count = [{'nome': nome, 'quantidade': quantidade} for nome, quantidade in query_result]
 
-    flash('Status atualizado com sucesso!', 'success')
-    return redirect(url_for('historico'))
+    # Contagem de status (se quiser usar)
+    status_count = db.session.query(Pedido.status, db.func.count(Pedido.id)).group_by(Pedido.status).all()
 
-from flask import flash, redirect, url_for
-
-# -------------------------------
-# PROMOVER SÍNDICO
-# -------------------------------
-@app.route('/promover_sindico/<int:morador_id>', methods=['POST'])
-@login_requerido('sindico')
-def promover_sindico(morador_id):
-    conn = get_db_connection()
-
-    # Buscar síndico atual
-    sindico_atual = conn.execute(
-        "SELECT * FROM usuarios WHERE tipo = 'sindico'"
-    ).fetchone()
-
-    # Rebaixar síndico atual (se existir e for diferente do novo)
-    if sindico_atual and sindico_atual['id'] != morador_id:
-        conn.execute(
-            "UPDATE usuarios SET tipo = 'morador' WHERE id = ?",
-            (sindico_atual['id'],)
-        )
-        flash(f"O síndico {sindico_atual['email']} foi rebaixado a morador comum.", "info")
-
-    # Promover o novo síndico
-    conn.execute(
-        "UPDATE usuarios SET tipo = 'sindico' WHERE id = ?",
-        (morador_id,)
-    )
-    conn.commit()
-    conn.close()
-
-    flash("Novo síndico promovido com sucesso!", "success")
-    return redirect(url_for('gerenciar_sindico'))
+    return render_template('dashboard_sindico.html',
+                           servicos_count=servicos_count,
+                           status_count=status_count)
 
 
 # -------------------------------
-# DISPROMOVER SÍNDICO (REBAIXAR)
-# -------------------------------
-@app.route('/dispromover_sindico/<int:morador_id>', methods=['POST'])
-@login_requerido('sindico')
-def dispromover_sindico(morador_id):
-    conn = get_db_connection()
-
-    usuario = conn.execute(
-        "SELECT * FROM usuarios WHERE id = ?", (morador_id,)
-    ).fetchone()
-
-    if usuario and usuario['tipo'] == 'sindico':
-        conn.execute(
-            "UPDATE usuarios SET tipo = 'morador' WHERE id = ?",
-            (morador_id,)
-        )
-        conn.commit()
-        flash(f"O síndico {usuario['email']} foi rebaixado a morador comum.", "info")
-    else:
-        flash("Usuário não encontrado ou já é morador.", "warning")
-
-    conn.close()
-    return redirect(url_for('gerenciar_sindico'))
-
-
-# -------------------------------
-# ROTA GERENCIAR SÍNDICO
+# GERENCIAMENTO DE USUÁRIOS
 # -------------------------------
 @app.route('/gerenciar_sindico')
 @login_requerido('sindico')
 def gerenciar_sindico():
-    conn = get_db_connection()
+    usuarios = Usuario.query.all()
+    servicos_disponiveis = Servico.query.all()
+    return render_template('gerenciar_sindico.html', usuarios=usuarios, servicos_disponiveis=servicos_disponiveis)
 
-    # Buscar todos os usuários
-    usuarios = conn.execute('SELECT id, email, tipo FROM usuarios').fetchall()
+@app.route('/promover_sindico/<int:morador_id>', methods=['POST'])
+@login_requerido('sindico')
+def promover_sindico(morador_id):
+    novo = Usuario.query.get(morador_id)
+    atual = Usuario.query.filter_by(tipo='sindico').first()
+    if novo and atual:
+        novo.tipo = 'sindico'
+        atual.tipo = 'morador'
+        db.session.commit()
+        flash('Novo síndico promovido com sucesso!', 'success')
+    else:
+        flash('Não foi possível promover o síndico.', 'danger')
+    return redirect(url_for('gerenciar_sindico'))
 
-    # Estatísticas simples dos pedidos
-    estatisticas = conn.execute(
-        'SELECT servico, COUNT(*) as total FROM pedidos GROUP BY servico'
-    ).fetchall()
-    estatisticas_dict = {row['servico']: row['total'] for row in estatisticas}
-
-    conn.close()
-
-    return render_template(
-        'gerenciar_sindico.html',
-        usuarios=usuarios,
-        estatisticas=estatisticas_dict
-    )
+@app.route('/dispromover_sindico/<int:morador_id>', methods=['POST'])
+@login_requerido('sindico')
+def dispromover_sindico(morador_id):
+    usuario = Usuario.query.get(morador_id)
+    if usuario and usuario.tipo == 'sindico':
+        usuario.tipo = 'morador'
+        db.session.commit()
+        flash(f"{usuario.email} foi rebaixado a morador.", 'info')
+    else:
+        flash('Usuário não encontrado ou já é morador.', 'warning')
+    return redirect(url_for('gerenciar_sindico'))
 
 
 # -------------------------------
-# EXECUTAR APP
+# ATUALIZAÇÃO DE STATUS DE PEDIDO
+# -------------------------------
+@app.route('/atualizar_status/<int:pedido_id>', methods=['POST'])
+@login_requerido('sindico')
+def atualizar_status(pedido_id):
+    pedido = Pedido.query.get(pedido_id)
+    novo_status = request.form.get('status')
+    observacao = request.form.get('observacao', '').strip()
+
+    if pedido and novo_status in ['Pendente', 'Em andamento', 'Concluído']:
+        pedido.status = novo_status
+        pedido.observacao = observacao
+        db.session.commit()
+        flash('Status do pedido atualizado!', 'success')
+    else:
+        flash('Não foi possível atualizar o status.', 'danger')
+
+    return redirect(url_for('historico'))
+
+# -------------------------------
+# EXECUÇÃO DO APP
 # -------------------------------
 if __name__ == '__main__':
     app.run(debug=True)

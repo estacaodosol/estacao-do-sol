@@ -1,94 +1,122 @@
-{% extends 'base.html' %}
+<!-- templates/meus_pedidos.html -->
+{% extends "base.html" %}
 
 {% block titulo %}Meus Pedidos{% endblock %}
 
 {% block conteudo %}
-<div class="container mt-4 mb-5">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3">
-        <h2 class="text-primary mb-3 mb-md-0">
-            <i class="fas fa-clipboard-list"></i> Meus Pedidos
-        </h2>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('novo_pedido') }}" class="btn btn-success">
-                <i class="fas fa-plus-circle"></i> Novo Pedido
-            </a>
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">
-                <i class="fas fa-sign-out-alt"></i> Sair
-            </a>
-        </div>
+<div class="container">
+    <h2>Meus Pedidos</h2>
+
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Botões de navegação -->
+    <div class="botoes-navegacao">
+        <a href="{{ url_for('novo_pedido') }}" class="btn btn-primary">Novo Pedido</a>
+       <a href="{{ url_for(voltar_endpoint) }}" class="btn btn-secondary">Voltar</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">Sair</a>
     </div>
 
     <!-- Filtro por serviço -->
-    <form method="get" class="row g-2 align-items-center mb-4">
-        <div class="col-12 col-md-auto">
-            <label for="servico" class="col-form-label me-2">Filtrar por serviço:</label>
-        </div>
-        <div class="col-12 col-md-4">
-            <select name="servico" id="servico" class="form-select" onchange="this.form.submit()">
-                <option value="">Todos</option>
-                {% for s in servicos_disponiveis %}
-                    <option value="{{ s }}" {% if request.args.get('servico') == s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-12 col-md-auto">
-            <a href="{{ url_for('meus_pedidos') }}" class="btn btn-secondary w-100">
-                <i class="fas fa-undo"></i> Limpar
-            </a>
-        </div>
+    <form method="GET" class="filtro-form">
+        <label for="servico">Filtrar por Serviço:</label>
+        <select id="servico" name="servico" onchange="this.form.submit()">
+            <option value="">Todos os serviços</option>
+            {% for servico in servicos_disponiveis %}
+                <option value="{{ servico.nome }}" {% if request.args.get('servico') == servico.nome %}selected{% endif %}>
+                    {{ servico.nome }}
+                </option>
+            {% endfor %}
+        </select>
     </form>
 
-    {% if pedidos %}
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-hover align-middle text-center">
-                <thead class="table-primary">
-                    <tr>
-                        <th>ID</th>
-                        <th>Data</th>
-                        <th>Usuário</th>
-                        <th>Nome</th>
-                        <th>Serviço</th>
-                        <th>Descrição</th>
-                        <th>Status</th>
-                        <th>Observação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in pedidos %}
-                    <tr>
-                        <td>{{ p['id'] }}</td>
-                        <td>{{ p['data'] }}</td>
-                        <td>{{ p['usuario'] }}</td>
-                        <td>{{ p['nome'] }}</td>
-                        <td>{{ p['servico'] }}</td>
-                        <td class="text-start">{{ p['descricao'] }}</td>
-                        <td>
-                            {% if p['status'] == 'Concluído' %}
-                                <span class="badge bg-success">Concluído</span>
-                            {% elif p['status'] == 'Em andamento' %}
-                                <span class="badge bg-warning text-dark">Em andamento</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ p['status'] }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ p['observacao'] or '-' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <div class="alert alert-warning text-center shadow-sm">
-            {% if request.args.get('servico') %}
-                Nenhum pedido encontrado para o serviço "<strong>{{ request.args.get('servico') }}</strong>".
-            {% else %}
-                Você ainda não possui pedidos cadastrados.
-                <br>
-                <a href="{{ url_for('novo_pedido') }}" class="btn btn-primary mt-3">
-                    <i class="fas fa-plus-circle"></i> Cadastrar Primeiro Pedido
-                </a>
-            {% endif %}
-        </div>
-    {% endif %}
+    <!-- Tabela de pedidos -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Serviço</th>
+                    <th>Descrição</th>
+                    <th>Foto</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for pedido in pedidos %}
+                <tr>
+                    <td>{{ pedido.nome }}</td>
+                    <td>{{ pedido.servico.nome }}</td>
+                    <td>{{ pedido.descricao or "-" }}</td>
+                    <td>
+                        {% if pedido.foto %}
+                            <img src="{{ pedido.foto }}" alt="Foto" style="max-width:80px; max-height:80px; border-radius:4px;">
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set brasilia = pedido.data.astimezone(brasil) %}
+                        {{ brasilia.strftime('%d/%m/%Y %H:%M') }}
+                    </td>
+                    <td>{{ pedido.status }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<!-- CSS básico para responsividade -->
+<style>
+    .container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .botoes-navegacao {
+        margin-bottom: 15px;
+    }
+    .botoes-navegacao .btn {
+        margin-right: 10px;
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        color: white;
+    }
+    .btn-primary { background-color: #007bff; }
+    .btn-secondary { background-color: #6c757d; }
+    .btn-danger { background-color: #dc3545; }
+    .btn:hover { opacity: 0.9; }
+    .filtro-form {
+        margin-bottom: 20px;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+    }
+    @media (max-width: 480px) {
+        th, td { font-size: 14px; padding: 6px; }
+        .botoes-navegacao .btn { margin-bottom: 5px; display: block; width: 100%; }
+    }
+</style>
 {% endblock %}

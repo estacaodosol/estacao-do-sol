@@ -56,5 +56,52 @@
       Nenhum usuário cadastrado no momento.
   </div>
   {% endif %}
+
+  <!-- Seção de Serviços -->
+  <hr>
+  <h2>Gerenciar Serviços</h2>
+
+  <form action="{{ url_for('cadastrar_servico') }}" method="POST" class="row g-2 mb-3">
+      <div class="col-8 col-md-6">
+          <!-- Corrigido: name="nome" para bater com o app.py -->
+         <input type="text" name="nome_servico" class="form-control" placeholder="Novo serviço" required>
+      </div>
+      <div class="col-4 col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Adicionar Serviço</button>
+      </div>
+  </form>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% if servicos_disponiveis %}
+  <table class="table table-bordered table-striped">
+      <thead class="table-dark">
+          <tr>
+              <th>Serviço</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for s in servicos_disponiveis %}
+          <tr>
+              <td>{{ s.nome }}</td>
+          </tr>
+          {% endfor %}
+      </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-warning">
+      Nenhum serviço cadastrado no momento.
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

@@ -13,9 +13,6 @@
   <!-- Ícones -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-  <!-- Manifesto (opcional para PWA) -->
-  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-
   <style>
     body {
       background-color: #f8f9fa;
@@ -40,7 +37,7 @@
   <!-- Navbar responsiva -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container-fluid">
-      <a class="navbar-brand" href="{{ url_for('login') }}">
+      <a class="navbar-brand" href="{% if session.get('usuario') and session.get('tipo','').lower() == 'sindico' %}{{ url_for('dashboard_sindico') }}{% else %}{{ url_for('login') }}{% endif %}">
         🏢 Condomínio App
       </a>
 
@@ -70,6 +67,11 @@
 
             {% elif tipo == 'sindico' %}
               <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('dashboard_sindico') }}">
+                  <i class="fas fa-home"></i> Dashboard
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('historico') }}">
                   <i class="fas fa-history"></i> Histórico
                 </a>
@@ -81,6 +83,7 @@
               </li>
             {% endif %}
 
+            <!-- Botão de logout para todos os usuários logados -->
             <li class="nav-item">
               <a class="nav-link text-warning" href="{{ url_for('logout') }}">
                 <i class="fas fa-sign-out-alt"></i> Sair

@@ -1,68 +1,82 @@
-{% extends 'base.html' %}
+<!-- templates/novo_pedido.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Pedido</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
+        .container { max-width:600px; margin:20px auto; background:white; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+        h2 { text-align:center; margin-bottom:20px; }
+        form label { display:block; margin-top:15px; font-weight:bold; }
+        form input, form textarea, form select { width:100%; padding:10px; margin-top:5px; border-radius:4px; border:1px solid #ccc; }
+        form textarea { resize:vertical; }
+        form input[type="file"] { margin-top:5px; }
+        button { margin-top:20px; width:100%; padding:12px; background-color:#007bff; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
+        button:hover { background-color:#0056b3; }
+        img#preview { margin-top:10px; max-width:100%; border-radius:4px; }
+        @media(max-width:480px){ .container { margin:10px; padding:15px; } }
+        .alert { padding:10px; margin-bottom:15px; border-radius:4px; }
+        .alert-success { background-color:#d4edda; color:#155724; }
+        .alert-danger { background-color:#f8d7da; color:#721c24; }
+        .alert-warning { background-color:#fff3cd; color:#856404; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Novo Pedido de Serviço</h2>
 
-{% block titulo %}Novo Pedido{% endblock %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-{% block conteudo %}
-<div class="container mt-4 mb-5">
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h2 class="card-title text-primary mb-4">
-                <i class="fas fa-plus-circle"></i> Novo Pedido
-            </h2>
+    <form method="POST" enctype="multipart/form-data">
+        <label for="nome">Título do Pedido *</label>
+        <input type="text" id="nome" name="nome" placeholder="Ex: Conserto de luz" required>
 
-            <!-- Formulário de novo pedido -->
-            <form method="POST" class="needs-validation" novalidate>
-                <div class="mb-3">
-                    <label for="nome" class="form-label">Nome do Pedido</label>
-                    <input type="text" class="form-control" id="nome" name="nome" placeholder="Ex: Troca de lâmpada" required>
-                    <div class="invalid-feedback">Por favor, insira um nome para o pedido.</div>
-                </div>
+        <label for="servico">Serviço *</label>
+        <select id="servico" name="servico" required>
+            <option value="">-- Selecione um serviço --</option>
+            {% for servico in servicos_disponiveis %}
+                <option value="{{ servico.id }}">{{ servico.nome }}</option>
+            {% endfor %}
+        </select>
 
-                <div class="mb-3">
-                    <label for="servico" class="form-label">Serviço</label>
-                    <select class="form-select" id="servico" name="servico" required>
-                        <option value="" disabled selected>Selecione um serviço</option>
-                        {% for servico in servicos_disponiveis %}
-                            <option value="{{ servico }}">{{ servico }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="invalid-feedback">Selecione o tipo de serviço desejado.</div>
-                </div>
+        <label for="descricao">Descrição</label>
+        <textarea id="descricao" name="descricao" rows="4" placeholder="Descreva o problema ou detalhe do serviço"></textarea>
 
-                <div class="mb-3">
-                    <label for="descricao" class="form-label">Descrição</label>
-                    <textarea class="form-control" id="descricao" name="descricao" rows="4" placeholder="Descreva o problema ou solicitação..." required></textarea>
-                    <div class="invalid-feedback">Por favor, descreva o pedido.</div>
-                </div>
+        <label for="foto">Foto (opcional)</label>
+        <input type="file" id="foto" name="foto" accept="image/*" capture="environment">
+        <img id="preview" src="#" alt="Pré-visualização da foto" style="display:none;">
 
-                <!-- Botões de ação -->
-                <div class="d-flex flex-column flex-md-row gap-2">
-                    <button type="submit" class="btn btn-success flex-fill">
-                        <i class="fas fa-check"></i> Cadastrar Pedido
-                    </button>
-                    <a href="{{ url_for('meus_pedidos') }}" class="btn btn-secondary flex-fill">
-                        <i class="fas fa-arrow-left"></i> Voltar
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
+        <button type="submit">Enviar Pedido</button>
+    </form>
 </div>
 
-<!-- Validação de formulário Bootstrap -->
 <script>
-(() => {
-  'use strict'
-  const forms = document.querySelectorAll('.needs-validation')
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-      form.classList.add('was-validated')
-    }, false)
-  })
-})()
+    const fotoInput = document.getElementById('foto');
+    const preview = document.getElementById('preview');
+
+    fotoInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '#';
+            preview.style.display = 'none';
+        }
+    });
 </script>
-{% endblock %}
+</body>
+</html>
