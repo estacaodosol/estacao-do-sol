@@ -6,15 +6,27 @@
 <div class="row mb-4">
   <div class="col-12">
     <h2 class="mb-3">Dashboard do Síndico</h2>
-    <p>Bem-vindo ao painel de controle do condomínio.</p>
+
+    <!-- 👇 Mensagem de boas-vindas personalizada -->
+    <p class="fw-bold">
+      Bem-vindo, 
+      {% if current_user.morador and current_user.morador.nome %}
+        {{ current_user.morador.nome }}
+      {% else %}
+        {{ current_user.email }}
+      {% endif %}
+      👋
+    </p>
+
+    <p class="text-muted">Aqui você pode gerenciar moradores, serviços e acompanhar o histórico de pedidos.</p>
   </div>
 </div>
 
 <div class="row">
-  <!-- Exemplo de cards para funcionalidades -->
+  <!-- Card: Histórico -->
   <div class="col-md-4 mb-3">
     <div class="card shadow-sm">
-      <div class="card-body">
+      <div class="card-body text-center">
         <h5 class="card-title"><i class="fas fa-history"></i> Histórico</h5>
         <p class="card-text">Visualize todas as solicitações do condomínio.</p>
         <a href="{{ url_for('historico') }}" class="btn btn-primary">Acessar</a>
@@ -22,12 +34,24 @@
     </div>
   </div>
 
+  <!-- Card: Gerenciar Moradores e Serviços -->
   <div class="col-md-4 mb-3">
     <div class="card shadow-sm">
-      <div class="card-body">
+      <div class="card-body text-center">
         <h5 class="card-title"><i class="fas fa-users-cog"></i> Gerenciar</h5>
-        <p class="card-text">Gerencie moradores e serviços.</p>
-        <a href="{{ url_for('gerenciar_sindico') }}" class="btn btn-primary">Acessar</a>
+        <p class="card-text">Gerencie moradores e serviços disponíveis.</p>
+        <a href="{{ url_for('gerenciar_sindico') }}" class="btn btn-success">Acessar</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: Logout -->
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title"><i class="fas fa-sign-out-alt"></i> Sair</h5>
+        <p class="card-text">Encerrar sessão do síndico.</p>
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
       </div>
     </div>
   </div>

@@ -3,41 +3,61 @@
 {% block titulo %}Histórico de Pedidos{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4">Histórico de Pedidos</h2>
+<h2 class="mb-3">Histórico de Pedidos</h2>
 
-<a href="{{ url_for('dashboard_sindico') }}" class="btn btn-secondary mb-4">
+<a href="{{ url_for('dashboard_sindico') }}" class="btn btn-secondary btn-sm mb-3">
   <i class="fas fa-arrow-left"></i> Voltar
 </a>
 
 <div class="row">
   {% for pedido in pedidos %}
-    <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card h-100 shadow-sm">
+    <div class="col-12 col-md-6 col-lg-4 mb-3">
+      <div class="card h-100 shadow-sm border-0 p-2 p-md-3">
         <div class="card-body d-flex flex-column">
-          <h5 class="card-title">{{ pedido.servico_nome }}</h5>
+          <h5 class="card-title fs-6 fs-md-5">{{ pedido.servico_nome }}</h5>
+
+          <p class="card-text small">
+            <i class="fas fa-user me-1"></i>
+            <strong>Morador:</strong>
+            <span class="badge bg-info text-dark">{{ pedido.nome_morador or pedido.usuario_email }}</span>
+          </p>
 
           {% if pedido.observacao %}
-            <p class="card-text"><strong>Observação:</strong> {{ pedido.observacao }}</p>
+            <p class="card-text small"><strong>Observação:</strong> {{ pedido.observacao }}</p>
           {% endif %}
 
-          <p class="card-text mt-auto">
+          <!-- Status com opção de alteração -->
+          <p class="card-text mt-auto small">
             <strong>Status:</strong>
-            {% if pedido.status.lower() == 'pendente' %}
-              <span class="badge bg-warning text-dark">{{ pedido.status }}</span>
-            {% elif pedido.status.lower() == 'aprovado' %}
-              <span class="badge bg-success">{{ pedido.status }}</span>
-            {% elif pedido.status.lower() == 'rejeitado' %}
-              <span class="badge bg-danger">{{ pedido.status }}</span>
+            {% if current_user.tipo == 'sindico' %}
+              <form action="{{ url_for('alterar_status', pedido_id=pedido.id) }}" method="POST" class="d-inline">
+                <select name="status" class="form-select w-auto d-inline" onchange="this.form.submit()">
+                  {% for s in ['pendente', 'em andamento', 'concluído', 'rejeitado'] %}
+                    <option value="{{ s }}" {% if pedido.status|lower == s %}selected{% endif %}>{{ s|capitalize }}</option>
+                  {% endfor %}
+                </select>
+              </form>
             {% else %}
-              <span class="badge bg-secondary">{{ pedido.status }}</span>
+              {% set status_lower = pedido.status.lower() %}
+              {% if status_lower == 'pendente' %}
+                <span class="badge bg-warning text-dark">{{ pedido.status }}</span>
+              {% elif status_lower == 'em andamento' %}
+                <span class="badge bg-primary">{{ pedido.status }}</span>
+              {% elif status_lower == 'concluído' %}
+                <span class="badge bg-success">{{ pedido.status }}</span>
+              {% elif status_lower == 'rejeitado' %}
+                <span class="badge bg-danger">{{ pedido.status }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ pedido.status }}</span>
+              {% endif %}
             {% endif %}
           </p>
 
           {% if pedido.data_solicitacao %}
-            <p class="card-text"><strong>Data:</strong> {{ pedido.data_solicitacao }}</p>
+            <p class="card-text small"><strong>Data:</strong> {{ pedido.data_solicitacao }}</p>
           {% endif %}
 
-          <p class="card-text"><strong>Usuário:</strong> {{ pedido.usuario_email }}</p>
+          <p class="card-text small"><strong>E-mail:</strong> {{ pedido.usuario_email }}</p>
         </div>
       </div>
     </div>

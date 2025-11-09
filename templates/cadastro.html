@@ -3,75 +3,135 @@
 {% block titulo %}Cadastro{% endblock %}
 
 {% block conteudo %}
-<div class="container mt-5 mb-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title text-center text-primary mb-4">
-                        <i class="fas fa-user-plus"></i> Cadastro de Usuário
-                    </h2>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+  <div class="card shadow-lg p-4 w-100" style="max-width: 480px;">
+    <h3 class="text-center mb-4 text-primary">
+      <i class="fas fa-user-plus"></i> Cadastro de Morador
+    </h3>
 
-                    <!-- Mensagens flash -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-                    <!-- Formulário de cadastro -->
-                    <form method="POST" class="needs-validation" novalidate>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">E-mail</label>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="seu@email.com" required>
-                            <div class="invalid-feedback">Por favor, insira um e-mail válido.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="senha" class="form-label">Senha</label>
-                            <input type="password" class="form-control" id="senha" name="senha" placeholder="Digite sua senha" required>
-                            <div class="invalid-feedback">Por favor, insira uma senha.</div>
-                        </div>
-
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-check"></i> Cadastrar
-                        </button>
-                    </form>
-
-                    <!-- Links -->
-                    <div class="mt-3 d-flex flex-column gap-2">
-                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-sign-in-alt"></i> Já tem cadastro? Faça login
-                        </a>
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
-                            <i class="fas fa-home"></i> Voltar para Início
-                        </a>
-                    </div>
-                </div>
-            </div>
+    <!-- Formulário -->
+    <form method="POST" class="needs-validation" novalidate>
+      <div class="mb-3">
+        <label for="nome" class="form-label">Nome Completo</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-user"></i></span>
+          <input type="text" class="form-control" id="nome" name="nome" placeholder="Digite seu nome completo" required>
         </div>
-    </div>
+        <div class="invalid-feedback">Informe seu nome completo.</div>
+      </div>
+
+      <!-- BLOCO e APTO -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="bloco" class="form-label">Bloco / Torre</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-building"></i></span>
+            <select id="bloco" name="bloco" class="form-select" required>
+              <option value="" selected disabled>Selecione</option>
+              {% for numero in range(1, 11) %}
+                <option value="{{ numero }}">{{ numero }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="invalid-feedback">Selecione o bloco.</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="numero" class="form-label">Apartamento</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-door-closed"></i></span>
+            <select id="numero" name="numero" class="form-select" required>
+              <option value="" selected disabled>Selecione</option>
+
+              <!-- Térreo -->
+              <optgroup label="Térreo">
+                {% for apt in range(1, 5) %}
+                  <option value="0{{ apt }}">0{{ apt }}</option>
+                {% endfor %}
+              </optgroup>
+
+              <!-- 1º ao 7º andar -->
+              {% for andar in range(1, 8) %}
+                <optgroup label="{{ andar }}º Andar">
+                  {% for apt in range(1, 5) %}
+                    <option value="{{ andar }}0{{ apt }}">{{ andar }}0{{ apt }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="invalid-feedback">Selecione o número do apartamento.</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="telefone" class="form-label">Telefone / WhatsApp</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-phone"></i></span>
+          <input type="tel" class="form-control" id="telefone" name="telefone" placeholder="(11) 99999-9999">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">E-mail</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+          <input type="email" class="form-control" id="email" name="email" placeholder="seu@email.com" required>
+        </div>
+        <div class="invalid-feedback">Insira um e-mail válido.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="senha" class="form-label">Senha</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-lock"></i></span>
+          <input type="password" class="form-control" id="senha" name="senha" placeholder="Digite sua senha" required>
+        </div>
+        <div class="invalid-feedback">Insira uma senha.</div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100 mb-3">
+        <i class="fas fa-check"></i> Cadastrar
+      </button>
+
+      <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100 mb-2">
+        <i class="fas fa-sign-in-alt"></i> Já tem conta? Faça login
+      </a>
+
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
+        <i class="fas fa-home"></i> Voltar ao início
+      </a>
+    </form>
+  </div>
 </div>
 
-<!-- Validação de formulário Bootstrap -->
 <script>
-(() => {
-  'use strict'
-  const forms = document.querySelectorAll('.needs-validation')
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-      form.classList.add('was-validated')
-    }, false)
-  })
-})()
+  // Validação Bootstrap
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+      .forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+          form.classList.add('was-validated')
+        }, false)
+      })
+  })()
 </script>
 {% endblock %}

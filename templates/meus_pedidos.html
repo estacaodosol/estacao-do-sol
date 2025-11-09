@@ -1,122 +1,95 @@
-<!-- templates/meus_pedidos.html -->
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block titulo %}Meus Pedidos{% endblock %}
+{% block titulo %}Pedidos{% endblock %}
 
 {% block conteudo %}
-<div class="container">
-    <h2>Meus Pedidos</h2>
+<h2 class="mb-4">Pedidos</h2>
 
-    <!-- Mensagens flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<a href="{{ url_for(voltar_endpoint) }}" class="btn btn-secondary mb-4">
+  <i class="fas fa-arrow-left"></i> Voltar
+</a>
 
-    <!-- Botões de navegação -->
-    <div class="botoes-navegacao">
-        <a href="{{ url_for('novo_pedido') }}" class="btn btn-primary">Novo Pedido</a>
-       <a href="{{ url_for(voltar_endpoint) }}" class="btn btn-secondary">Voltar</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-danger">Sair</a>
+<!-- Filtro de serviços (todos podem usar) -->
+<form method="get" class="mb-4 d-flex flex-column flex-md-row align-items-md-center gap-2">
+  <label for="servico" class="me-2">Filtrar por serviço:</label>
+  <select id="servico" name="servico" class="form-select w-auto">
+    <option value="">Todos</option>
+    {% for s in servicos_disponiveis %}
+      <option value="{{ s.id }}" {% if request.args.get('servico') == s.id|string %}selected{% endif %}>{{ s.nome }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary">Filtrar</button>
+</form>
+
+<div class="row">
+  {% for pedido in pedidos %}
+    <div class="col-12 col-md-6 col-lg-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex flex-column">
+
+          <!-- Serviço -->
+          <h5 class="card-title">{{ pedido.servico_nome }}</h5>
+
+          <!-- Morador (aparece só se for síndico ou se tiver informação) -->
+          {% if current_user.tipo == 'sindico' or pedido.nome_morador %}
+            <p class="card-text">
+              <i class="fas fa-user me-1"></i>
+              <strong>Morador:</strong>
+              <span class="badge bg-info text-dark">{{ pedido.nome_morador or '---' }}</span>
+            </p>
+          {% endif %}
+
+          <!-- Observação -->
+          {% if pedido.observacao %}
+            <p class="card-text"><strong>Observação:</strong> {{ pedido.observacao }}</p>
+          {% endif %}
+
+          <!-- Status -->
+          <p class="card-text mt-auto">
+            <strong>Status:</strong>
+            {% if current_user.tipo == 'sindico' %}
+              <!-- Dropdown para síndico alterar status -->
+              <form action="{{ url_for('alterar_status', pedido_id=pedido.id) }}" method="POST" class="d-inline">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                  {% for s in ['pendente', 'em andamento', 'concluído', 'rejeitado'] %}
+                    <option value="{{ s }}" {% if pedido.status|lower == s %}selected{% endif %}>
+                      {{ s|capitalize }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% else %}
+              <!-- Somente leitura para moradores -->
+              {% set status_lower = pedido.status.lower() %}
+              {% if status_lower == 'pendente' %}
+                <span class="badge bg-warning text-dark">{{ pedido.status }}</span>
+              {% elif status_lower == 'em andamento' %}
+                <span class="badge bg-primary">{{ pedido.status }}</span>
+              {% elif status_lower == 'concluído' %}
+                <span class="badge bg-success">{{ pedido.status }}</span>
+              {% elif status_lower == 'rejeitado' %}
+                <span class="badge bg-danger">{{ pedido.status }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ pedido.status }}</span>
+              {% endif %}
+            {% endif %}
+          </p>
+
+          <!-- Data -->
+          {% if pedido.data_solicitacao %}
+            <p class="card-text"><strong>Data:</strong> {{ pedido.data_solicitacao }}</p>
+          {% endif %}
+
+          <!-- Email do usuário (opcional para síndico) -->
+          {% if current_user.tipo == 'sindico' %}
+            <p class="card-text"><strong>E-mail:</strong> {{ pedido.usuario_email }}</p>
+          {% endif %}
+
+        </div>
+      </div>
     </div>
-
-    <!-- Filtro por serviço -->
-    <form method="GET" class="filtro-form">
-        <label for="servico">Filtrar por Serviço:</label>
-        <select id="servico" name="servico" onchange="this.form.submit()">
-            <option value="">Todos os serviços</option>
-            {% for servico in servicos_disponiveis %}
-                <option value="{{ servico.nome }}" {% if request.args.get('servico') == servico.nome %}selected{% endif %}>
-                    {{ servico.nome }}
-                </option>
-            {% endfor %}
-        </select>
-    </form>
-
-    <!-- Tabela de pedidos -->
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Título</th>
-                    <th>Serviço</th>
-                    <th>Descrição</th>
-                    <th>Foto</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for pedido in pedidos %}
-                <tr>
-                    <td>{{ pedido.nome }}</td>
-                    <td>{{ pedido.servico.nome }}</td>
-                    <td>{{ pedido.descricao or "-" }}</td>
-                    <td>
-                        {% if pedido.foto %}
-                            <img src="{{ pedido.foto }}" alt="Foto" style="max-width:80px; max-height:80px; border-radius:4px;">
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% set brasilia = pedido.data.astimezone(brasil) %}
-                        {{ brasilia.strftime('%d/%m/%Y %H:%M') }}
-                    </td>
-                    <td>{{ pedido.status }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  {% else %}
+    <p>Nenhum pedido registrado.</p>
+  {% endfor %}
 </div>
-
-<!-- CSS básico para responsividade -->
-<style>
-    .container {
-        max-width: 900px;
-        margin: 20px auto;
-        padding: 20px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .botoes-navegacao {
-        margin-bottom: 15px;
-    }
-    .botoes-navegacao .btn {
-        margin-right: 10px;
-        text-decoration: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        color: white;
-    }
-    .btn-primary { background-color: #007bff; }
-    .btn-secondary { background-color: #6c757d; }
-    .btn-danger { background-color: #dc3545; }
-    .btn:hover { opacity: 0.9; }
-    .filtro-form {
-        margin-bottom: 20px;
-    }
-    .table-responsive {
-        overflow-x: auto;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th, td {
-        padding: 8px 12px;
-        text-align: left;
-    }
-    @media (max-width: 480px) {
-        th, td { font-size: 14px; padding: 6px; }
-        .botoes-navegacao .btn { margin-bottom: 5px; display: block; width: 100%; }
-    }
-</style>
 {% endblock %}
